@@ -1,0 +1,17 @@
+name: AutoDependabot
+
+on:
+  pull_request:
+    branches:
+    - beta
+    - latest
+  pull_request_target:
+    branches:
+    - beta
+    - latest
+
+jobs:
+  label:
+    uses: donavanbecker/.github/.github/workflows/dependabot.yml@latest
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
