@@ -270,7 +270,7 @@ export class Meater {
    * Handle requests to set the "On" characteristic
    */
   handleOnSet(value: CharacteristicValue) {
-    this.log.debug('Cook Refresh On:', value);
+    this.log.info('Cook Refresh On:', value);
     this.cookRefresh = value as boolean;
     this.refreshRate();
     this.updateHomeKitCharacteristics();

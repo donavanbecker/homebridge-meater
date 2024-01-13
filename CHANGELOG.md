@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. This projec
 
 ### What's Changed
 
-- 
+- Release of [homebridge-meater](https://github.com/donavanbecker/homebridge-meater) which allows you to see the temperature to your Meater Thermometer throw HomeKit.
 
 **Full Changelog**: https://github.com/donavanbecker/homebridge-meater/compare/v0.1.0...v1.0.0
 
