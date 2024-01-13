@@ -175,6 +175,7 @@ export class Meater {
           const device: any = await body.json();
           this.log.debug(`Device: ${JSON.stringify(device)}`);
           this.log.debug(`Device StatusCode: ${device.statusCode}`);
+          this.log.warn(`Device: ${JSON.stringify(device.data)}`);
           if (statusCode === 200 && device.statusCode === 200) {
             this.internalCurrentTemperature = device.data.temperature.internal;
             this.ambientCurrentTemperature = device.data.temperature.ambient;
@@ -184,8 +185,6 @@ export class Meater {
             await this.statusCode(statusCode);
             await this.statusCode(device.statusCode);
           }
-          await this.parseStatus();
-          await this.updateHomeKitCharacteristics();
         }
       } catch (e: any) {
         this.apiError(e);
@@ -193,7 +192,12 @@ export class Meater {
           `${this.accessory.displayName} failed refreshStatus, Error Message: ${JSON.stringify(e.message)}`,
         );
       }
+    } else {
+      this.log.info(`Cook Refresh is off for ${this.accessory.displayName}`);
+      this.cookRefresh = false;
     }
+    await this.parseStatus();
+    await this.updateHomeKitCharacteristics();
   }
 
   /**
