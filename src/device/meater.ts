@@ -276,7 +276,7 @@ export class Meater {
   async handleOnSet(value: CharacteristicValue) {
     this.log.info('Cook Refresh On:', value);
     this.cookRefresh = value as boolean;
-    await this.refreshRate();
+    await this.refreshStatus();
     await this.updateHomeKitCharacteristics();
   }
 }
