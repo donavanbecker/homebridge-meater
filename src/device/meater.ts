@@ -25,7 +25,7 @@ export class Meater {
   ambientCurrentTemperature: CharacteristicValue;
 
   // Cofiguration
-  cookRefresh: boolean = this.config.cookRefresh || false;
+  cookRefresh!: boolean;
 
   // Updates
   SensorUpdateInProgress!: boolean;
