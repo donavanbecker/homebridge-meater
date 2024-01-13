@@ -179,8 +179,8 @@ export class Meater {
           if (statusCode === 200 && device.statusCode === 200) {
             this.internalCurrentTemperature = device.data.temperature.internal;
             this.ambientCurrentTemperature = device.data.temperature.ambient;
-          } else if (device.statusCode === 404) {
-            this.cookRefresh = false;
+            this.cookRefresh = true;
+            this.log.info(`${this.accessory.displayName} Internal: ${this.internalCurrentTemperature}, Ambient: ${this.ambientCurrentTemperature}°c`);
           } else {
             await this.statusCode(statusCode);
             await this.statusCode(device.statusCode);
@@ -251,6 +251,7 @@ export class Meater {
         break;
       case 404:
         this.log.error(`${this.accessory.displayName} Not Found, statusCode: ${statusCode}`);
+        this.cookRefresh = false;
         break;
       case 429:
         this.log.error(`${this.accessory.displayName} Too Many Requests, statusCode: ${statusCode}`);
