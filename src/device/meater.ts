@@ -135,7 +135,7 @@ export class Meater {
   }
 
   async refreshRate() {
-    return this.platform.config.refreshRate || 360;
+    return this.platform.config.refreshRate || 60;
   }
 
   /**
@@ -159,6 +159,7 @@ export class Meater {
    * Asks the SwitchBot API for the latest device information
    */
   async refreshStatus(): Promise<void> {
+    this.log.info(`Refreshing ${this.accessory.displayName} Status... Cooking: ${this.cookRefresh}`);
     if (this.cookRefresh) {
       try {
         if (this.config.token) {
@@ -177,16 +178,14 @@ export class Meater {
           if (statusCode === 200 && device.statusCode === 200) {
             this.internalCurrentTemperature = device.data.temperature.internal;
             this.ambientCurrentTemperature = device.data.temperature.ambient;
-            this.parseStatus();
-            this.updateHomeKitCharacteristics();
           } else if (device.statusCode === 404) {
             this.cookRefresh = false;
-            this.parseStatus();
-            this.updateHomeKitCharacteristics();
           } else {
-            this.statusCode(statusCode);
-            this.statusCode(device.statusCode);
+            await this.statusCode(statusCode);
+            await this.statusCode(device.statusCode);
           }
+          await this.parseStatus();
+          await this.updateHomeKitCharacteristics();
         }
       } catch (e: any) {
         this.apiError(e);
@@ -269,10 +268,10 @@ export class Meater {
   /**
    * Handle requests to set the "On" characteristic
    */
-  handleOnSet(value: CharacteristicValue) {
+  async handleOnSet(value: CharacteristicValue) {
     this.log.info('Cook Refresh On:', value);
     this.cookRefresh = value as boolean;
-    this.refreshRate();
-    this.updateHomeKitCharacteristics();
+    await this.refreshRate();
+    await this.updateHomeKitCharacteristics();
   }
 }
