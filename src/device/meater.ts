@@ -15,13 +15,17 @@ export class Meater {
   public readonly config!: MeaterPlatformConfig;
   protected readonly hap: HAP;
   // Services
-  ServiceLabel!: Service;
+  serviceLabel!: Service;
+  cookRefreshSwitchService!: Service;
   internalTemperatureService!: Service;
   ambientTemperatureService!: Service;
 
   // Characteristic Values
-  internalCurrentTemperature?: CharacteristicValue;
-  ambientCurrentTemperature?: CharacteristicValue;
+  internalCurrentTemperature: CharacteristicValue;
+  ambientCurrentTemperature: CharacteristicValue;
+
+  // Cofiguration
+  cookRefresh: boolean = this.config.cookRefresh || false;
 
   // Updates
   SensorUpdateInProgress!: boolean;
@@ -52,14 +56,14 @@ export class Meater {
       .setCharacteristic(this.hap.Characteristic.FirmwareRevision, accessory.context.FirmwareRevision);
 
     // Service Label Service
-    this.ServiceLabel = this.accessory.getService(this.hap.Service.ServiceLabel) ||
+    this.serviceLabel = this.accessory.getService(this.hap.Service.ServiceLabel) ||
     this.accessory.addService(this.hap.Service.ServiceLabel, `Meater Thermometer (${device.id.slice(0, 4)})` );
-    this.ServiceLabel.setCharacteristic(this.hap.Characteristic.Name, `Meater Thermometer (${device.id.slice(0, 4)})`);
+    this.serviceLabel.setCharacteristic(this.hap.Characteristic.Name, `Meater Thermometer (${device.id.slice(0, 4)})`);
     if (
-      !this.ServiceLabel.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
-        !this.ServiceLabel.testCharacteristic(this.hap.Characteristic.Name)
+      !this.serviceLabel.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
+        !this.serviceLabel.testCharacteristic(this.hap.Characteristic.Name)
     ) {
-      this.ServiceLabel.addCharacteristic(
+      this.serviceLabel.addCharacteristic(
         this.hap.Characteristic.ConfiguredName, `Meater Thermometer (${device.id.slice(0, 4)})`,
       );
     }
@@ -97,6 +101,26 @@ export class Meater {
       this.ambientTemperatureService.addCharacteristic(
         this.hap.Characteristic.ConfiguredName, 'Ambient Temperature');
     }
+
+    // Cook Refresh Switch Service Service
+    this.cookRefreshSwitchService = <Service>this.accessory.getServiceById(this.hap.Service.Switch, 'Cook Refresh');
+    if (!this.cookRefreshSwitchService) {
+      this.cookRefreshSwitchService = new this.hap.Service.Switch('Cook Refresh', 'Cook Refresh');
+      if (this.cookRefreshSwitchService) {
+        this.cookRefreshSwitchService = this.accessory.addService(this.cookRefreshSwitchService);
+        this.log.info('Ambient Temperature Service');
+      } else {
+        this.log.error('Ambient Temperature Service -- Failed!');
+      }
+    }
+    this.cookRefreshSwitchService.setCharacteristic(this.hap.Characteristic.Name, 'Cook Refresh');
+    if (!this.cookRefreshSwitchService.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
+      !this.cookRefreshSwitchService.testCharacteristic(this.hap.Characteristic.Name)) {
+      this.cookRefreshSwitchService.addCharacteristic(
+        this.hap.Characteristic.ConfiguredName, 'Cook Refresh');
+    }
+    // create handlers for required characteristics
+    this.cookRefreshSwitchService.getCharacteristic(this.hap.Characteristic.On).onSet(this.handleOnSet.bind(this));
 
 
     /*
@@ -161,35 +185,41 @@ export class Meater {
    * Asks the SwitchBot API for the latest device information
    */
   async refreshStatus(): Promise<void> {
-    try {
-      if (this.config.token) {
-        const { body, statusCode, headers } = await request(`${meaterUrl}/${this.device.id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': 'Bearer ' + this.config.token,
-          },
-        });
-        this.log.info(`Device body: ${JSON.stringify(body)}`);
-        this.log.info(`Device statusCode: ${statusCode}`);
-        this.log.info(`Device headers: ${JSON.stringify(headers)}`);
-        const device: any = await body.json();
-        this.log.info(`Device: ${JSON.stringify(device)}`);
-        this.log.info(`Device StatusCode: ${device.statusCode}`);
-        if (statusCode === 200 && device.statusCode === 200) {
-          this.internalCurrentTemperature = device.data.temperature.internal;
-          this.ambientCurrentTemperature = device.data.temperature.ambient;
-          this.parseStatus();
-          this.updateHomeKitCharacteristics();
-        } else {
-          this.statusCode(statusCode);
-          this.statusCode(device.statusCode);
+    if (this.cookRefresh) {
+      try {
+        if (this.config.token) {
+          const { body, statusCode, headers } = await request(`${meaterUrl}/${this.device.id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': 'Bearer ' + this.config.token,
+            },
+          });
+          this.log.info(`Device body: ${JSON.stringify(body)}`);
+          this.log.info(`Device statusCode: ${statusCode}`);
+          this.log.info(`Device headers: ${JSON.stringify(headers)}`);
+          const device: any = await body.json();
+          this.log.info(`Device: ${JSON.stringify(device)}`);
+          this.log.info(`Device StatusCode: ${device.statusCode}`);
+          if (statusCode === 200 && device.statusCode === 200) {
+            this.internalCurrentTemperature = device.data.temperature.internal;
+            this.ambientCurrentTemperature = device.data.temperature.ambient;
+            this.parseStatus();
+            this.updateHomeKitCharacteristics();
+          } else if (device.statusCode === 404) {
+            this.cookRefresh = false;
+            this.parseStatus();
+            this.updateHomeKitCharacteristics();
+          } else {
+            this.statusCode(statusCode);
+            this.statusCode(device.statusCode);
+          }
         }
+      } catch (e: any) {
+        this.apiError(e);
+        this.log.error(
+          `${this.accessory.displayName} failed refreshStatus, Error Message: ${JSON.stringify(e.message)}`,
+        );
       }
-    } catch (e: any) {
-      this.apiError(e);
-      this.log.error(
-        `${this.accessory.displayName} failed refreshStatus, Error Message: ${JSON.stringify(e.message)}`,
-      );
     }
   }
 
@@ -211,6 +241,14 @@ export class Meater {
       this.accessory.context.ambientCurrentTemperature = this.ambientCurrentTemperature;
       this.ambientTemperatureService?.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.ambientCurrentTemperature);
       this.log.debug(`${this.accessory.displayName} updateCharacteristic Ambient Current Temperature: ${this.ambientCurrentTemperature}`);
+    }
+
+    if (this.cookRefresh === undefined) {
+      this.log.debug(`${this.accessory.displayName} Cook Refresh Switch: ${this.cookRefresh}`);
+    } else {
+      this.accessory.context.cookRefresh = this.cookRefresh;
+      this.cookRefreshSwitchService?.updateCharacteristic(this.hap.Characteristic.On, this.cookRefresh);
+      this.log.debug(`${this.accessory.displayName} updateCharacteristic Cook Refresh Switch: ${this.cookRefresh}`);
     }
   }
 
@@ -252,5 +290,15 @@ export class Meater {
   async apiError(e: any): Promise<void> {
     this.internalTemperatureService?.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, e);
 
+  }
+
+  /**
+   * Handle requests to set the "On" characteristic
+   */
+  handleOnSet(value: CharacteristicValue) {
+    this.log.debug('Cook Refresh On:', value);
+    this.cookRefresh = value as boolean;
+    this.refreshRate();
+    this.updateHomeKitCharacteristics();
   }
 }
