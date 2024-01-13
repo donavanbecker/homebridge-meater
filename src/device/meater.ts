@@ -74,7 +74,7 @@ export class Meater {
       this.internalTemperatureService = new this.hap.Service.TemperatureSensor('Internal Temperature', 'Internal Temperature');
       if (this.internalTemperatureService) {
         this.internalTemperatureService = this.accessory.addService(this.internalTemperatureService);
-        this.log.info('Internal Temperature Service');
+        this.log.debug('Internal Temperature Service');
       } else {
         this.log.error('Internal Temperature Service -- Failed!');
       }
@@ -90,7 +90,7 @@ export class Meater {
       this.ambientTemperatureService = new this.hap.Service.TemperatureSensor('Ambient Temperature', 'Ambient Temperature');
       if (this.ambientTemperatureService) {
         this.ambientTemperatureService = this.accessory.addService(this.ambientTemperatureService);
-        this.log.info('Ambient Temperature Service');
+        this.log.debug('Ambient Temperature Service');
       } else {
         this.log.error('Ambient Temperature Service -- Failed!');
       }
@@ -108,7 +108,7 @@ export class Meater {
       this.cookRefreshSwitchService = new this.hap.Service.Switch('Cook Refresh', 'Cook Refresh');
       if (this.cookRefreshSwitchService) {
         this.cookRefreshSwitchService = this.accessory.addService(this.cookRefreshSwitchService);
-        this.log.info('Ambient Temperature Service');
+        this.log.debug('Ambient Temperature Service');
       } else {
         this.log.error('Ambient Temperature Service -- Failed!');
       }
@@ -121,32 +121,6 @@ export class Meater {
     }
     // create handlers for required characteristics
     this.cookRefreshSwitchService.getCharacteristic(this.hap.Characteristic.On).onSet(this.handleOnSet.bind(this));
-
-
-    /*
-    this.accessory.getService(`${device.id} Internal`) ??
-      this.accessory.addService(this.hap.Service.TemperatureSensor, `${device.id} Internal`, 'Internal');
-    this.internalTemperatureService.setCharacteristic(this.hap.Characteristic.Name, `${accessory.displayName} Internal Temperature`);
-    if (
-      !this.internalTemperatureService.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
-      !this.internalTemperatureService.testCharacteristic(this.hap.Characteristic.Name)
-    ) {
-      this.internalTemperatureService.addCharacteristic(
-        this.hap.Characteristic.ConfiguredName, `${accessory.displayName} Internal Temperature`,
-      );
-    }
-
-    // Ambient Temperature Sensor Service
-    this.accessory.getService(`${device.id} Ambient`) ??
-      this.accessory.addService(this.hap.Service.TemperatureSensor, `${device.id} Ambient`, 'Ambient');
-    this.ambientTemperatureService.setCharacteristic(this.hap.Characteristic.Name, `${accessory.displayName} Ambient Temperature`);
-    if (
-      !this.ambientTemperatureService.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
-      !this.ambientTemperatureService.testCharacteristic(this.hap.Characteristic.Name)
-    ) {
-      this.ambientTemperatureService.addCharacteristic(
-        this.hap.Characteristic.ConfiguredName, `${accessory.displayName} Ambient Temperature`);
-    }*/
 
     // Retrieve initial values and update Homekit
     this.updateHomeKitCharacteristics();
@@ -194,12 +168,12 @@ export class Meater {
               'Authorization': 'Bearer ' + this.config.token,
             },
           });
-          this.log.info(`Device body: ${JSON.stringify(body)}`);
-          this.log.info(`Device statusCode: ${statusCode}`);
-          this.log.info(`Device headers: ${JSON.stringify(headers)}`);
+          this.log.debug(`Device body: ${JSON.stringify(body)}`);
+          this.log.debug(`Device statusCode: ${statusCode}`);
+          this.log.debug(`Device headers: ${JSON.stringify(headers)}`);
           const device: any = await body.json();
-          this.log.info(`Device: ${JSON.stringify(device)}`);
-          this.log.info(`Device StatusCode: ${device.statusCode}`);
+          this.log.debug(`Device: ${JSON.stringify(device)}`);
+          this.log.debug(`Device StatusCode: ${device.statusCode}`);
           if (statusCode === 200 && device.statusCode === 200) {
             this.internalCurrentTemperature = device.data.temperature.internal;
             this.ambientCurrentTemperature = device.data.temperature.ambient;
