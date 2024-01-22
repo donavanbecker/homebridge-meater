@@ -40,7 +40,7 @@ export class Meater {
     this.config = this.platform.config;
     this.hap = this.api.hap;
 
-    this.cookRefresh = this.accessory.context.cookRefresh;
+    this.cookRefresh = accessory.context.cookRefresh;
     this.internalCurrentTemperature = accessory.context.internalCurrentTemperature;
     this.ambientCurrentTemperature = accessory.context.ambientCurrentTemperature;
     accessory.context.FirmwareRevision = 'v1.0.0';
