@@ -30,5 +30,6 @@
   "[jsonc]": {
     "editor.defaultFormatter": "vscode.json-language-features"
   },
-  "typescript.tsserver.nodePath": "/usr/local/bin/node"
+  "typescript.tsserver.nodePath": "/usr/local/bin/node",
+  "codeQL.githubDatabase.update": "never"
 }
