@@ -23,7 +23,11 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
   public platformLogging!: string;
   public debugMode!: boolean;
 
-  constructor(log: Logging, config: MeaterPlatformConfig, api: API) {
+  constructor(
+    log: Logging,
+    config: MeaterPlatformConfig,
+    api: API,
+  ) {
     this.accessories = [];
     this.api = api;
     this.log = log;
