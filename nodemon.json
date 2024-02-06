@@ -1,8 +1,6 @@
 {
-  "watch": [
-    "src"
-  ],
-  "ext": "ts",
+  "watch": ["src"],
+  "ext": "ts, html",
   "ignore": [],
   "exec": "DEBUG= tsc && homebridge -T -D -P -I -U ~/.homebridge-dev ..",
   "signal": "SIGTERM",
