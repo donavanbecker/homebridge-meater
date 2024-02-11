@@ -161,18 +161,16 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
   async discoverDevices() {
     try {
       if (this.config.token) {
-        const { body, statusCode, headers } = await request(meaterUrl, {
+        const { body, statusCode } = await request(meaterUrl, {
           method: 'GET',
           headers: {
             'Authorization': 'Bearer ' + this.config.token,
           },
         });
-        this.log.info(`Device body: ${JSON.stringify(body)}`);
-        this.log.info(`Device statusCode: ${statusCode}`);
-        this.log.info(`Device headers: ${JSON.stringify(headers)}`);
+        this.log.debug(`Device statusCode: ${statusCode}`);
         const device: any = await body.json();
-        this.log.info(`Device: ${JSON.stringify(device)}`);
-        this.log.info(`Device StatusCode: ${device.statusCode}`);
+        this.log.debug(`Device: ${JSON.stringify(device)}`);
+        this.log.debug(`Device StatusCode: ${device.statusCode}`);
         if (statusCode === 200 && device.statusCode === 200) {
           this.log.info (`Found ${device.data.devices.length} Devices`);
           // Meater Devices
@@ -188,14 +186,12 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
           email: this.config.email,
           password: this.config.password,
         });
-        const { body, statusCode, headers } = await request(meaterUrlLogin, {
+        const { body, statusCode } = await request(meaterUrlLogin, {
           body: payload,
           method: 'POST',
           headers: { 'content-type': 'application/json' },
         });
-        this.log.debug(`body: ${JSON.stringify(body)}`);
         this.log.debug(`statusCode: ${statusCode}`);
-        this.log.debug(`headers: ${JSON.stringify(headers)}`);
         const login: any = await body.json();
         this.log.debug(`Login: ${JSON.stringify(login)}`);
         this.log.debug(`Login Token: ${JSON.stringify(login.data.token)}`);
@@ -204,15 +200,13 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
         await this.updateToken();
         this.log.debug(`statusCode: ${statusCode} & devicesAPI StatusCode: ${login.statusCode}`);
         if (statusCode === 200 && login.statusCode === 200) {
-          const { body, statusCode, headers } = await request(meaterUrl, {
+          const { body, statusCode } = await request(meaterUrl, {
             method: 'GET',
             headers: {
               Authorization: `Bearer ${login.data.token}}`,
             },
           });
-          this.log.debug(`Device body: ${JSON.stringify(body)}`);
           this.log.debug(`Device statusCode: ${statusCode}`);
-          this.log.debug(`Device headers: ${JSON.stringify(headers)}`);
           const device: any = await body.json();
           this.log.debug(`Device: ${JSON.stringify(device)}`);
           this.log.debug(`Device StatusCode: ${device.statusCode}`);

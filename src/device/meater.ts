@@ -164,15 +164,13 @@ export class Meater {
     if (this.cookRefresh) {
       try {
         if (this.config.token) {
-          const { body, statusCode, headers } = await request(`${meaterUrl}/${this.device.id}`, {
+          const { body, statusCode } = await request(`${meaterUrl}/${this.device.id}`, {
             method: 'GET',
             headers: {
               'Authorization': 'Bearer ' + this.config.token,
             },
           });
-          this.log.debug(`Device body: ${JSON.stringify(body)}`);
           this.log.debug(`Device statusCode: ${statusCode}`);
-          this.log.debug(`Device headers: ${JSON.stringify(headers)}`);
           const device: any = await body.json();
           this.log.debug(`Device: ${JSON.stringify(device)}`);
           this.log.debug(`Device StatusCode: ${device.statusCode}`);
