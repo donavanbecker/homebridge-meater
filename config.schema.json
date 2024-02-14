@@ -30,6 +30,13 @@
               "type": "password"
             }
           },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "x-schema-form": {
+              "type": "token"
+            }
+          },
           "notice": {
             "title": "Notice",
             "type": "string",
@@ -171,7 +178,8 @@
           "helpvalue": "<h5></h5><em class='primary-text'>This is for Manual Setup Only.</em>"
         },
         "credentials.email",
-        "credentials.password"
+        "credentials.password",
+        "credentials.token"
       ]
     },
     {
