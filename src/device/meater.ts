@@ -113,7 +113,7 @@ export class Meater extends deviceBase {
     this.debugLog('Configure cookRefresh Service');
     this.cookRefresh = {
       service: <Service>this.accessory.getServiceById(this.hap.Service.Switch, 'Cook Refresh'),
-      on: this.accessory.context.cookRefresh.on,
+      on: this.accessory.context.cookRefreshOn,
     };
     if (this.cookRefresh) {
       if (!this.cookRefresh.service) {
@@ -234,7 +234,7 @@ export class Meater extends deviceBase {
     if (this.cookRefresh.on === undefined) {
       this.log.debug(`${this.accessory.displayName} Cook Refresh Switch: ${this.cookRefresh.on}`);
     } else {
-      this.accessory.context.cookRefresh.on = this.cookRefresh.on;
+      this.accessory.context.cookRefreshOn = this.cookRefresh.on;
       this.cookRefresh.service?.updateCharacteristic(this.hap.Characteristic.On, this.cookRefresh.on);
       this.log.debug(`${this.accessory.displayName} updateCharacteristic Cook Refresh Switch: ${this.cookRefresh.on}`);
     }
@@ -302,10 +302,10 @@ export class Meater extends deviceBase {
     } else {
       this.accessory.context.ambientCurrentTemperature;
     }
-    if (this.accessory.context.cookRefresh.on === undefined) {
-      this.accessory.context.cookRefresh.on = false;
+    if (this.accessory.context.cookRefreshOn === undefined) {
+      this.accessory.context.cookRefreshOn = false;
     } else {
-      this.accessory.context.cookRefresh.on;
+      this.accessory.context.cookRefreshOn;
     }
   }
 }
