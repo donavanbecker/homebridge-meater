@@ -259,6 +259,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
       if (await this.registerDevice(device)) {
         // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
         existingAccessory.context.device.id = device.id;
+        existingAccessory.context.displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
         existingAccessory.context.FirmwareRevision = await this.FirmwareRevision(device);
         this.infoLog(`Restoring existing accessory from cache: ${existingAccessory.displayName} DeviceID: ${device.id}`);
         this.api.updatePlatformAccessories([existingAccessory]);
