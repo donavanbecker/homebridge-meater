@@ -1,3 +1,7 @@
+/* Copyright(C) 2023-2024, donavanbecker (https://github.com/donavanbecker). All rights reserved.
+ *
+ * setting.ts: homebridge-meater.
+ */
 /* eslint-disable max-len */
 import { PlatformConfig } from 'homebridge';
 /**
@@ -21,16 +25,30 @@ export const meaterUrlLogin = 'https://public-api.cloud.meater.com/v1/login';
 
 //Config
 export interface MeaterPlatformConfig extends PlatformConfig {
+  credentials?: credentials;
+  options?: options | Record<string, never>;
+}
+
+export type credentials = {
   email?: string;
   password?: string;
   token?: string;
-  logging?: string;
-  refreshRate?: number;
-}
+};
 
-export type deviceConfig = {
-  hide_device: boolean;
-  external: boolean;
+export type options = {
+  devices?: Array<devicesConfig>;
+  refreshRate?: number;
+  logging?: string;
+};
+
+export interface devicesConfig extends device {
+  id: string;
+  configDeviceName?: string;
+  hide_device?: boolean;
+  firmware?: string;
+  external?: boolean;
+  refreshRate?: number;
+  logging?: string;
 }
 
 export type getDevice = {
@@ -49,6 +67,11 @@ export type device = {
   temperature: Temperature;
   cook: Cook;
   updated_at: number;
+  data: deviceData;
+}
+
+export type deviceData = {
+  temperature: Temperature;
 }
 
 export type Temperature = {

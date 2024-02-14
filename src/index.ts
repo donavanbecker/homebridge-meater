@@ -1,10 +1,11 @@
-/* Copyright(C) 2022-2024, donavanbecker (https://github.com/donavanbecker). All rights reserved.
+/* Copyright(C) 2023-2024, donavanbecker (https://github.com/donavanbecker). All rights reserved.
  *
- * index.ts: homebridge-august plugin registration.
+ * index.ts: homebridge-meater.
  */
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 import { API } from 'homebridge';
+
 import { MeaterPlatform } from './platform.js';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 // Register our platform with homebridge.
 export default (api: API): void => {

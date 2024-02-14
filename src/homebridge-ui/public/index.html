@@ -52,23 +52,11 @@
       <tbody>
         <tr>
           <th scope="row">Device ID</th>
-          <td id="deviceID"></td>
-        </tr>
-        <tr>
-          <th scope="row">Model</th>
-          <td id="model"></td>
+          <td id="ID"></td>
         </tr>
         <tr>
           <th scope="row">Firmware Version</th>
-          <td id="firmwareRevision"></td>
-        </tr>
-        <tr>
-          <th scope="row">Device Type</th>
-          <td id="deviceType"></td>
-        </tr>
-        <tr>
-          <th scope="row">Connection Type</th>
-          <td id="connectionType"></td>
+          <td id="FirmwareRevision"></td>
         </tr>
       </tbody>
     </table>
@@ -160,11 +148,8 @@
           const thisAcc = cachedAccessories.find((x) => x.UUID === UUID);
           const context = thisAcc.context;
           document.getElementById('displayName').innerHTML = thisAcc.displayName;
-          document.getElementById('deviceID').innerHTML = context.deviceID;
-          document.getElementById('model').innerHTML = context.model;
-          document.getElementById('firmwareRevision').innerHTML = context.firmwareRevision || 'N/A';
-          document.getElementById('deviceType').innerHTML = context.deviceType;
-          document.getElementById('connectionType').innerHTML = context.connectionType;
+          document.getElementById('ID').innerHTML = context.device.id;
+          document.getElementById('FirmwareRevision').innerHTML = context.FirmwareRevision || 'N/A';
           document.getElementById('deviceTable').style.display = 'inline-table';
           homebridge.hideSpinner();
         };

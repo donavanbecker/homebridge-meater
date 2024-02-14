@@ -1,13 +1,13 @@
-/* Copyright(C) 2024, donavanbecker (https://github.com/donavanbecker). All rights reserved.
+/* Copyright(C) 2023-2024, donavanbecker (https://github.com/donavanbecker). All rights reserved.
  *
- * protect-platform.ts: homebridge-meater platform class.
+ * platform.ts: homebridge-meater.
  */
-import { API, DynamicPlatformPlugin, Logging, PlatformAccessory } from 'homebridge';
-import { PLATFORM_NAME, PLUGIN_NAME, MeaterPlatformConfig, meaterUrlLogin, meaterUrl, device, deviceConfig } from './settings.js';
-import { request } from 'undici';
-import { Meater } from './device/meater.js';
+import { API, DynamicPlatformPlugin, HAP, Logging, PlatformAccessory } from 'homebridge';
 import { readFileSync, writeFileSync } from 'fs';
-import util from 'node:util';
+import { request } from 'undici';
+
+import { Meater } from './device/meater.js';
+import { PLATFORM_NAME, PLUGIN_NAME, MeaterPlatformConfig, meaterUrlLogin, meaterUrl, device, devicesConfig } from './settings.js';
 
 /**
  * HomebridgePlatform
@@ -18,19 +18,22 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
   public accessories: PlatformAccessory[];
   public readonly api: API;
   public readonly log: Logging;
+  protected readonly hap: HAP;
   public config!: MeaterPlatformConfig;
 
-  public platformLogging!: string;
-  public debugMode!: boolean;
+  platformConfig!: MeaterPlatformConfig['options'];
+  platformLogging!: MeaterPlatformConfig['logging'];
+  debugMode!: boolean;
 
-  constructor(log: Logging, config: MeaterPlatformConfig, api: API) {
+  constructor(
+    log: Logging,
+    config: MeaterPlatformConfig,
+    api: API,
+  ) {
     this.accessories = [];
     this.api = api;
+    this.hap = this.api.hap;
     this.log = log;
-    //this.log.info = this.info.bind(this);
-    //this.log.warn = this.warn.bind(this) || this.debugWarn.bind(this);
-    //this.log.error = this.error.bind(this) || this.debugError.bind(this);
-    //this.log.debug = this.debug.bind(this);
     // only load if configured
     if (!config) {
       return;
@@ -38,54 +41,40 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
 
     // Plugin options into our config variables.
     this.config = {
-      platform: 'MeaterPlatform',
-      email: config.email as string,
-      password: config.password as string,
-      token: config.token as string,
-      logging: config.logging as string,
+      platform: 'Meater',
+      credentials: config.credentials,
+      options: config.options,
     };
-    this.logType();
-    this.info((`Finished initializing platform: ${config.name}`));
+    this.platformConfigOptions();
+    this.platformLogs();
+    this.debugLog(`Finished initializing platform: ${config.name}`);
 
-    this.debug('Debug logging on. Expect a lot of data.');
     // verify the config
-    try {
-      this.verifyConfig();
-      this.log.debug('Config OK');
-    } catch (e: any) {
-      this.log.error(`Verify Config, Error Message: ${e.message}, Submit Bugs Here: ` + 'https://bit.ly/homebridge-meater-bug-report');
-      this.log.error(`Verify Config, Error: ${e}`);
-      return;
-    }
+    (async () => {
+      try {
+        await this.verifyConfig();
+        this.debugLog('Config OK');
+      } catch (e: any) {
+        this.errorLog(`Verify Config, Error Message: ${e.message}, Submit Bugs Here: https://bit.ly/homebridge-meater-bug-report`);
+        this.debugErrorLog(`Verify Config, Error: ${e}`);
+        return;
+      }
+    })();
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
     // in order to ensure they weren't added to homebridge already. This event can also be used
     // to start discovery of new accessories.
     this.api.on('didFinishLaunching', async () => {
-      this.log.debug('Executed didFinishLaunching callback');
+      this.debugLog('Executed didFinishLaunching callback');
       // run the method to discover / register your devices as accessories
       try {
-        this.discoverDevices();
+        await this.discoverDevices();
       } catch (e: any) {
-        this.log.error(`Failed to Discover, Error Message: ${e.message}, Submit Bugs Here: ` + 'https://bit.ly/homebridge-meater-bug-report');
-        this.log.error(`Failed to Discover, Error: ${e}`);
+        this.errorLog(`Failed to Discover, Error Message: ${e.message}, Submit Bugs Here: ` + 'https://bit.ly/homebridge-meater-bug-report');
+        this.debugErrorLog(`Failed to Discover, Error: ${e}`);
       }
     });
-  }
-
-  logType() {
-    this.debugMode = process.argv.includes('-D') || process.argv.includes('--debug');
-    if (this.config.logging === 'debug' || this.config.logging === 'standard' || this.config.logging === 'none') {
-      this.platformLogging = this.config.options!.logging;
-      this.log.warn(`Using Config Logging: ${this.platformLogging}`);
-    } else if (this.debugMode) {
-      this.platformLogging = 'debugMode';
-      this.log.warn(`Using ${this.platformLogging} Logging`);
-    } else {
-      this.platformLogging = 'standard';
-      this.log.warn(`Using ${this.platformLogging} Logging`);
-    }
   }
 
   /**
@@ -93,7 +82,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
    * It should be used to setup event handlers for characteristics and update respective values.
    */
   configureAccessory(accessory: PlatformAccessory) {
-    this.log.debug(`Loading accessory from cache: ${accessory.displayName}`);
+    this.debugLog(`Loading accessory from cache: ${accessory.displayName}`);
 
     // add the restored accessory to the accessories cache so we can track if it has already been registered
     this.accessories.push(accessory);
@@ -103,10 +92,10 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
    * Verify the config passed to the plugin is valid
    */
   async verifyConfig() {
-    if (!this.config.email) {
+    if (!this.config.credentials?.email) {
       throw new Error('Email not provided');
     }
-    if (!this.config.password) {
+    if (!this.config.credentials?.password) {
       throw new Error('Password not provided');
     }
   }
@@ -114,12 +103,12 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
   /**
    * The openToken was old config.
    * This method saves the openToken as the token in the config.json file
-   * @param this.config.credentials.openToken
+   * @param this.config.credentials.token
    */
-  async updateToken() {
+  async updateToken(login: { data: { token: any; }; }) {
     try {
       // check the new token was provided
-      if (!this.config.token) {
+      if (!this.config.credentials?.token) {
         throw new Error('New token not provided');
       }
 
@@ -138,16 +127,21 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
         throw new Error(`Cannot find config for ${PLATFORM_NAME} in platforms array`);
       }
 
-      // set the refresh token
-      pluginConfig.token = this.config.token;
+      // check the .credentials is an object before doing object things with it
+      if (typeof pluginConfig.credentials !== 'object') {
+        throw new Error('pluginConfig.credentials is not an object');
+      }
 
-      this.log.warn(`token: ${pluginConfig.token}`);
+      // set the refresh token
+      pluginConfig.credentials.token = login.data.token;
+
+      this.debugWarnLog(`token: ${pluginConfig.credentials.token}`);
 
       // save the config, ensuring we maintain pretty json
       writeFileSync(this.api.user.configPath(), JSON.stringify(currentConfig, null, 4));
       this.verifyConfig();
     } catch (e: any) {
-      this.log.error(`Update Token: ${e}`);
+      this.errorLog(`Update Token: ${e}`);
     }
   }
 
@@ -156,68 +150,65 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
    */
   async discoverDevices() {
     try {
-      if (this.config.token) {
-        const { body, statusCode, headers } = await request(meaterUrl, {
+      if (this.config.credentials?.token) {
+        const { body, statusCode } = await request(meaterUrl, {
           method: 'GET',
           headers: {
-            'Authorization': 'Bearer ' + this.config.token,
+            'Authorization': 'Bearer ' + this.config.credentials.token,
           },
         });
-        this.log.info(`Device body: ${JSON.stringify(body)}`);
-        this.log.info(`Device statusCode: ${statusCode}`);
-        this.log.info(`Device headers: ${JSON.stringify(headers)}`);
+        this.debugLog(`Device statusCode: ${statusCode}`);
         const device: any = await body.json();
-        this.log.info(`Device: ${JSON.stringify(device)}`);
-        this.log.info(`Device StatusCode: ${device.statusCode}`);
+        this.debugLog(`Device: ${JSON.stringify(device)}`);
+        this.debugLog(`Device StatusCode: ${device.statusCode}`);
         if (statusCode === 200 && device.statusCode === 200) {
-          this.log.info (`Found ${device.data.devices.length} Devices`);
+          this.infoLog (`Found ${device.data.devices.length} Devices`);
+          const deviceLists = device.data.devices;
+          await this.configureDevices(deviceLists);
           // Meater Devices
-          device.data.devices.forEach((device: device & deviceConfig) => {
+          /*device.data.devices.forEach((device: device & deviceConfig) => {
             this.createMeter(device);
-          });
+          });*/
         } else {
           this.statusCode(statusCode);
           this.statusCode(device.statusCode);
         }
       } else {
         const payload = JSON.stringify({
-          email: this.config.email,
-          password: this.config.password,
+          email: this.config.credentials?.email,
+          password: this.config.credentials?.password,
         });
-        const { body, statusCode, headers } = await request(meaterUrlLogin, {
+        const { body, statusCode } = await request(meaterUrlLogin, {
           body: payload,
           method: 'POST',
           headers: { 'content-type': 'application/json' },
         });
-        this.log.debug(`body: ${JSON.stringify(body)}`);
-        this.log.debug(`statusCode: ${statusCode}`);
-        this.log.debug(`headers: ${JSON.stringify(headers)}`);
+        this.debugLog(`statusCode: ${statusCode}`);
         const login: any = await body.json();
-        this.log.debug(`Login: ${JSON.stringify(login)}`);
-        this.log.debug(`Login Token: ${JSON.stringify(login.data.token)}`);
-        this.log.debug(`Login StatusCode: ${login.statusCode}`);
-        this.config.token = login.data.token;
-        await this.updateToken();
-        this.log.debug(`statusCode: ${statusCode} & devicesAPI StatusCode: ${login.statusCode}`);
+        this.debugLog(`Login: ${JSON.stringify(login)}`);
+        this.debugLog(`Login Token: ${JSON.stringify(login.data.token)}`);
+        this.debugLog(`Login StatusCode: ${login.statusCode}`);
+        await this.updateToken(login);
+        this.debugLog(`statusCode: ${statusCode} & devicesAPI StatusCode: ${login.statusCode}`);
         if (statusCode === 200 && login.statusCode === 200) {
-          const { body, statusCode, headers } = await request(meaterUrl, {
+          const { body, statusCode } = await request(meaterUrl, {
             method: 'GET',
             headers: {
               Authorization: `Bearer ${login.data.token}}`,
             },
           });
-          this.log.debug(`Device body: ${JSON.stringify(body)}`);
-          this.log.debug(`Device statusCode: ${statusCode}`);
-          this.log.debug(`Device headers: ${JSON.stringify(headers)}`);
+          this.debugLog(`Device statusCode: ${statusCode}`);
           const device: any = await body.json();
-          this.log.debug(`Device: ${JSON.stringify(device)}`);
-          this.log.debug(`Device StatusCode: ${device.statusCode}`);
+          this.debugLog(`Device: ${JSON.stringify(device)}`);
+          this.debugLog(`Device StatusCode: ${device.statusCode}`);
           if (statusCode === 200 && device.statusCode === 200) {
-            this.log.info (`Found ${device.data.devices.length} Devices`);
+            this.infoLog (`Found ${device.data.devices.length} Devices`);
+            const deviceLists = device.data.devices;
+            await this.configureDevices(deviceLists);
             // Meater Devices
-            device.data.devices.forEach((device: device & deviceConfig) => {
+            /*device.data.devices.forEach((device: device & deviceConfig) => {
               this.createMeter(device);
-            });
+            });*/
           } else {
             this.statusCode(statusCode);
             this.statusCode(device.statusCode);
@@ -225,14 +216,41 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
         }
       }
     } catch (e: any) {
-      this.log.error(
+      this.errorLog(
         `Failed to Discover Devices, Error Message: ${JSON.stringify(e.message)}, Submit Bugs Here: ` + 'https://bit.ly/homebridge-meater-bug-report',
       );
-      this.log.error(`Failed to Discover Devices, Error: ${e}`);
+      this.errorLog(`Failed to Discover Devices, Error: ${e}`);
     }
   }
 
-  private async createMeter(device: device & deviceConfig) {
+  private async configureDevices(deviceLists: any) {
+    if (!this.config.options?.devices) {
+      this.debugLog(`No Meater Device Config: ${JSON.stringify(this.config.options?.devices)}`);
+      const devices = deviceLists.map((v: any) => v);
+      for (const device of devices) {
+        await this.createMeter(device);
+      }
+    } else {
+      this.debugLog(`Meater Device Config Set: ${JSON.stringify(this.config.options?.devices)}`);
+      const deviceConfigs = this.config.options?.devices;
+      if (deviceLists === undefined) {
+        deviceLists = deviceConfigs;
+      }
+
+      const mergeByid = (a1: { id: string; }[], a2: any[]) => a1.map((itm: { id: string; }) => ({
+        ...a2.find((item: { id: string; }) => item.id === itm.id && item),
+        ...itm,
+      }));
+
+      const devices = mergeByid(deviceLists, deviceConfigs);
+      this.debugLog(`Resideo Devices: ${JSON.stringify(devices)}`);
+      for (const device of devices) {
+        await this.createMeter(device);
+      }
+    }
+  }
+
+  private async createMeter(device: device & devicesConfig) {
     const uuid = this.api.hap.uuid.generate(device.id);
 
     // see if an accessory with the same uuid has already been registered and restored from
@@ -244,60 +262,76 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
       if (await this.registerDevice(device)) {
         // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
         existingAccessory.context.device.id = device.id;
-        this.log.info(`Restoring existing accessory from cache: ${existingAccessory.displayName} DeviceID: ${device.id}`);
+        existingAccessory.context.displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
+        existingAccessory.context.FirmwareRevision = await this.FirmwareRevision(device);
+        this.infoLog(`Restoring existing accessory from cache: ${existingAccessory.displayName} DeviceID: ${device.id}`);
         this.api.updatePlatformAccessories([existingAccessory]);
         // create the accessory handler for the restored accessory
         // this is imported from `platformAccessory.ts`
         new Meater(this, existingAccessory, device);
-        this.log.debug(`uuid: ${device.id}, (${existingAccessory.UUID})`);
+        this.debugLog(`uuid: ${device.id}, (${existingAccessory.UUID})`);
       } else {
         this.unregisterPlatformAccessories(existingAccessory);
       }
     } else if (await this.registerDevice(device)) {
       // the accessory does not yet exist, so we need to create it
       if (!device.external) {
-        this.log.info(`Adding new accessory, DeviceID: ${device.id}`);
+        const displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
+        this.infoLog(`Adding new accessory, Meater: ${displayName}, id: ${device.id}`);
       }
 
       // create a new accessory
-      const accessory = new this.api.platformAccessory(`Meater Thermometer (${device.id.slice(0, 4)})`, uuid);
+      const accessory = new this.api.platformAccessory((device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`), uuid);
 
       // store a copy of the device object in the `accessory.context`
       // the `context` property can be used to store any data about the accessory you may need
       accessory.context.device = device;
       accessory.context.device.id = device.id;
+      accessory.context.displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
+      accessory.context.FirmwareRevision = await this.FirmwareRevision(device);
       // create the accessory handler for the newly create accessory
       // this is imported from `platformAccessory.ts`
       new Meater(this, accessory, device);
-      this.log.debug(`uuid: ${device.id}, (${accessory.UUID})`);
+      this.debugLog(`uuid: ${device.id}, (${accessory.UUID})`);
 
       // publish device externally or link the accessory to your platform
       this.externalOrPlatform(device, accessory);
       this.accessories.push(accessory);
     } else {
-      this.log.debug(`Device not registered, DeviceID: ${device.id}`);
+      this.debugLog(`Device not registered, DeviceID: ${device.id}`);
     }
   }
 
-  async registerDevice(device: device & deviceConfig): Promise<boolean> {
+  async FirmwareRevision(device: device & devicesConfig): Promise<any> {
+    let firmware: any;
+    if (device.firmware) {
+      firmware = device.firmware;
+    } else {
+      firmware = await this.getVersion();
+    }
+    return firmware;
+  }
+
+  async registerDevice(device: device & devicesConfig): Promise<boolean> {
     let registerDevice: boolean;
     if (!device.hide_device) {
       registerDevice = true;
     } else {
       registerDevice = false;
-      this.log.error(
-        `DeviceID: ${device.id} will not display in HomeKit, hide_device: ${device.hide_device}`,
+      const displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
+      this.errorLog(
+        `Meater: ${displayName}, id: ${device.id} will not display in HomeKit, hide_device: ${device.hide_device}`,
       );
     }
     return registerDevice;
   }
 
-  public async externalOrPlatform(device, accessory: PlatformAccessory) {
+  public async externalOrPlatform(device: device & devicesConfig, accessory: PlatformAccessory) {
     if (device.external) {
-      this.log.warn(`${accessory.displayName} External Accessory Mode`);
+      this.warnLog(`${accessory.displayName} External Accessory Mode`);
       this.externalAccessory(accessory);
     } else {
-      this.log.debug(`${accessory.displayName} External Accessory Mode: ${device.external}`);
+      this.debugLog(`${accessory.displayName} External Accessory Mode: ${device.external}`);
       this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
     }
   }
@@ -309,85 +343,133 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
   public unregisterPlatformAccessories(existingAccessory: PlatformAccessory) {
     // remove platform accessories when no longer present
     this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
-    this.log.warn(`Removing existing accessory from cache: ${existingAccessory.displayName}`);
+    this.warnLog(`Removing existing accessory from cache: ${existingAccessory.displayName}`);
   }
 
   async statusCode(statusCode: number): Promise<void> {
     switch (statusCode) {
       case 200:
-        this.log.debug(`Standard Response, statusCode: ${statusCode}`);
+        this.debugLog(`Standard Response, statusCode: ${statusCode}`);
         break;
       case 400:
-        this.log.error(`Bad Request, statusCode: ${statusCode}`);
+        this.errorLog(`Bad Request, statusCode: ${statusCode}`);
         break;
       case 401:
-        this.log.error(`Unauthorized, statusCode: ${statusCode}`);
+        this.errorLog(`Unauthorized, statusCode: ${statusCode}`);
         break;
       case 404:
-        this.log.error(`Not Found, statusCode: ${statusCode}`);
+        this.errorLog(`Not Found, statusCode: ${statusCode}`);
         break;
       case 429:
-        this.log.error(`Too Many Requests, statusCode: ${statusCode}`);
+        this.errorLog(`Too Many Requests, statusCode: ${statusCode}`);
         break;
       case 500:
-        this.log.error(`Internal Server Error (Meater Server), statusCode: ${statusCode}`);
+        this.errorLog(`Internal Server Error (Meater Server), statusCode: ${statusCode}`);
         break;
       default:
-        this.log.info(`Unknown statusCode: ${statusCode}, Report Bugs Here: https://bit.ly/homebridge-meater-bug-report`);
+        this.infoLog(`Unknown statusCode: ${statusCode}, Report Bugs Here: https://bit.ly/homebridge-meater-bug-report`);
     }
   }
 
-  // Utility for debug logging.
-  public info(message: string, ...parameters: unknown[]): void {
-    if (this.enablingPlatfromLogging()) {
-      this.log.info(util.format(message, ...parameters));
+  async platformConfigOptions() {
+    const platformConfig: MeaterPlatformConfig['options'] = {
+    };
+    if (this.config.options?.logging) {
+      platformConfig.logging = this.config.options?.logging;
+    }
+    if (this.config.options?.refreshRate) {
+      platformConfig.refreshRate = this.config.options?.refreshRate;
+    }
+    if (Object.entries(platformConfig).length !== 0) {
+      this.debugLog(`Platform Config: ${JSON.stringify(platformConfig)}`);
+    }
+    this.platformConfig = platformConfig;
+  }
+
+  async platformLogs() {
+    this.debugMode = process.argv.includes('-D') || process.argv.includes('--debug');
+    this.platformLogging = this.config.options?.logging || 'standard';
+    if (this.config.options?.logging === 'debug' || this.config.options?.logging === 'standard' || this.config.options?.logging === 'none') {
+      this.platformLogging = this.config.options.logging;
+      if (this.platformLogging?.includes('debug')) {
+        this.debugWarnLog(`Using Config Logging: ${this.platformLogging}`);
+      }
+    } else if (this.debugMode) {
+      this.platformLogging = 'debugMode';
+      if (this.platformLogging?.includes('debug')) {
+        this.debugWarnLog(`Using ${this.platformLogging} Logging`);
+      }
+    } else {
+      this.platformLogging = 'standard';
+      if (this.platformLogging?.includes('debug')) {
+        this.debugWarnLog(`Using ${this.platformLogging} Logging`);
+      }
+    }
+    if (this.debugMode) {
+      this.platformLogging = 'debugMode';
     }
   }
 
-  // Utility for warn logging.
-  public warn(message: string, ...parameters: unknown[]): void {
+  async getVersion() {
+    const json = JSON.parse(
+      readFileSync(
+        new URL('../package.json', import.meta.url),
+        'utf-8',
+      ),
+    );
+    this.debugLog(`Plugin Version: ${json.version}`);
+    return json.version;
+  }
+
+  /**
+   * If device level logging is turned on, log to log.warn
+   * Otherwise send debug logs to log.debug
+   */
+  infoLog(...log: any[]): void {
     if (this.enablingPlatfromLogging()) {
-      this.log.info(util.format(message, ...parameters));
+      this.log.info(String(...log));
     }
   }
 
-  // Utility for debug logging.
-  public error(message: string, ...parameters: unknown[]): void {
+  warnLog(...log: any[]): void {
     if (this.enablingPlatfromLogging()) {
-      this.log.error(util.format(message, ...parameters));
+      this.log.warn(String(...log));
     }
   }
 
-  // Utility for debug logging.
-  public debug(message: string, ...parameters: unknown[]): void {
+  debugWarnLog(...log: any[]): void {
     if (this.enablingPlatfromLogging()) {
-      if (this.config.logging === 'debugMode') {
-        this.log.debug(util.format(message, ...parameters));
-      } else if (this.config.logging === 'debug') {
-        this.log.info(util.format(message, ...parameters));
+      if (this.platformLogging?.includes('debug')) {
+        this.log.warn('[DEBUG]', String(...log));
       }
     }
   }
 
-  // Utility for debug logging.
-  public debugError(message: string, ...parameters: unknown[]): void {
+  errorLog(...log: any[]): void {
     if (this.enablingPlatfromLogging()) {
-      if (this.config.logging === 'debugMode') {
-        this.log.debug(util.format(message, ...parameters));
-      } else if (this.config.logging === 'debug') {
-        this.log.info(util.format(message, ...parameters));
+      this.log.error(String(...log));
+    }
+  }
+
+  debugErrorLog(...log: any[]): void {
+    if (this.enablingPlatfromLogging()) {
+      if (this.platformLogging?.includes('debug')) {
+        this.log.error('[DEBUG]', String(...log));
       }
     }
   }
 
-  // Utility for debug logging.
-  public debugWarn(message: string, ...parameters: unknown[]): void {
+  debugLog(...log: any[]): void {
     if (this.enablingPlatfromLogging()) {
-      this.log.info(util.format(message, ...parameters));
+      if (this.platformLogging === 'debugMode') {
+        this.log.debug(String(...log));
+      } else if (this.platformLogging === 'debug') {
+        this.log.info('[DEBUG]', String(...log));
+      }
     }
   }
 
-  private enablingPlatfromLogging() {
-    return this.config.logging?.includes('debug') || this.config.logging === 'standard';
+  enablingPlatfromLogging(): boolean {
+    return this.platformLogging?.includes('debug') || this.platformLogging === 'standard';
   }
 }
