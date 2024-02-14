@@ -66,7 +66,7 @@ export class Meater extends deviceBase {
     this.debugLog('Configure InternalTemperature Service');
     this.internal = {
       service: <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Internal Temperature'),
-      currentTemperature: this.accessory.context.internal.currentTemperature,
+      currentTemperature: this.accessory.context.internalCurrentTemperature,
     };
 
     if (this.internal) {
@@ -90,7 +90,7 @@ export class Meater extends deviceBase {
     this.debugLog('Configure AmbientTemperature Service');
     this.ambient = {
       service: <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Ambient Temperature'),
-      currentTemperature: this.accessory.context.ambient.currentTemperature,
+      currentTemperature: this.accessory.context.ambientCurrentTemperature,
     };
     if (this.ambient) {
       if (!this.ambient.service) {
@@ -113,7 +113,7 @@ export class Meater extends deviceBase {
     this.debugLog('Configure cookRefresh Service');
     this.cookRefresh = {
       service: <Service>this.accessory.getServiceById(this.hap.Service.Switch, 'Cook Refresh'),
-      on: false,
+      on: this.accessory.context.cookRefresh.on,
     };
     if (this.cookRefresh) {
       if (!this.cookRefresh.service) {
@@ -158,13 +158,13 @@ export class Meater extends deviceBase {
   async parseStatus(device: device & devicesConfig): Promise<void> {
     // Internal Temperature
     this.internal.currentTemperature = device.data.temperature.internal;
-    if (this.internal.currentTemperature !== this.accessory.context.internal.currentTemperature) {
+    if (this.internal.currentTemperature !== this.accessory.context.internalCurrentTemperature) {
       this.log.debug(`${this.accessory.displayName} Internal Current Temperature: ${this.internal.currentTemperature}°c`);
     }
 
     // Ambient Temperature
     this.ambient.currentTemperature = device.data.temperature.ambient;
-    if (this.ambient.currentTemperature !== this.accessory.context.ambient.currentTemperature) {
+    if (this.ambient.currentTemperature !== this.accessory.context.ambientCurrentTemperature) {
       this.log.debug(`${this.accessory.displayName} Ambient Current Temperature: ${this.ambient.currentTemperature}°c`);
     }
   }
@@ -173,8 +173,8 @@ export class Meater extends deviceBase {
    * Asks the SwitchBot API for the latest device information
    */
   async refreshStatus(): Promise<void> {
-    this.log.info(`Refreshing ${this.accessory.displayName} Status... Cooking: ${this.cookRefresh}`);
-    if (this.cookRefresh) {
+    this.log.info(`Refreshing ${this.accessory.displayName} Status... Cooking: ${this.CookRefresh}`);
+    if (this.CookRefresh) {
       try {
         if (this.config.token) {
           const { body, statusCode } = await request(`${meaterUrl}/${this.device.id}`, {
@@ -220,7 +220,7 @@ export class Meater extends deviceBase {
     } else {
       this.internal.service.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.internal.currentTemperature);
       this.log.debug(`${this.accessory.displayName} updateCharacteristic Internal Current Temperature: ${this.internal.currentTemperature}`);
-      //this.accessory.context.internal.currentTemperature = this.internal.currentTemperature;
+      this.accessory.context.internalCurrentTemperature = this.internal.currentTemperature;
     }
 
     if (this.ambient.currentTemperature === undefined) {
@@ -228,15 +228,15 @@ export class Meater extends deviceBase {
     } else {
       this.ambient.service?.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.ambient.currentTemperature);
       this.log.debug(`${this.accessory.displayName} updateCharacteristic Ambient Current Temperature: ${this.ambient.currentTemperature}`);
-      this.accessory.context.ambient.currentTemperature = this.ambient.currentTemperature;
+      this.accessory.context.ambientCurrentTemperature = this.ambient.currentTemperature;
     }
 
-    if (this.cookRefresh === undefined) {
-      this.log.debug(`${this.accessory.displayName} Cook Refresh Switch: ${this.cookRefresh}`);
+    if (this.cookRefresh.on === undefined) {
+      this.log.debug(`${this.accessory.displayName} Cook Refresh Switch: ${this.cookRefresh.on}`);
     } else {
-      this.accessory.context.cookRefresh = this.cookRefresh;
-      this.cookRefresh.service?.updateCharacteristic(this.hap.Characteristic.On, this.CookRefresh);
-      this.log.debug(`${this.accessory.displayName} updateCharacteristic Cook Refresh Switch: ${this.cookRefresh}`);
+      this.accessory.context.cookRefresh.on = this.cookRefresh.on;
+      this.cookRefresh.service?.updateCharacteristic(this.hap.Characteristic.On, this.cookRefresh.on);
+      this.log.debug(`${this.accessory.displayName} updateCharacteristic Cook Refresh Switch: ${this.cookRefresh.on}`);
     }
   }
 
@@ -292,15 +292,20 @@ export class Meater extends deviceBase {
   }
 
   async deviceContext() {
-    if (this.accessory.context.internal.currentTemperature === undefined) {
-      this.accessory.context.internal.currentTemperature = 32;
+    if (this.accessory.context.internalCurrentTemperature === undefined) {
+      this.accessory.context.internalCurrentTemperature = 32;
     } else {
-      this.accessory.context.internal.currentTemperature;
+      this.accessory.context.internalCurrentTemperature;
     }
-    if (this.accessory.context.ambient.currentTemperature === undefined) {
-      this.accessory.context.ambient.currentTemperature = 32;
+    if (this.accessory.context.ambientCurrentTemperature === undefined) {
+      this.accessory.context.ambientCurrentTemperature = 32;
     } else {
-      this.accessory.context.ambient.currentTemperature;
+      this.accessory.context.ambientCurrentTemperature;
+    }
+    if (this.accessory.context.cookRefresh.on === undefined) {
+      this.accessory.context.cookRefresh.on = false;
+    } else {
+      this.accessory.context.cookRefresh.on;
     }
   }
 }
