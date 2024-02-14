@@ -283,6 +283,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
       // the `context` property can be used to store any data about the accessory you may need
       accessory.context.device = device;
       accessory.context.device.id = device.id;
+      accessory.context.displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
       accessory.context.FirmwareRevision = await this.FirmwareRevision(device);
       // create the accessory handler for the newly create accessory
       // this is imported from `platformAccessory.ts`
