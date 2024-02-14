@@ -112,20 +112,9 @@ export class Meater extends deviceBase {
     // cookRefresh Service
     this.debugLog('Configure cookRefresh Service');
     this.cookRefresh = {
-      service: <Service>this.accessory.getServiceById(this.hap.Service.Switch, 'Cook Refresh'),
+      service: this.accessory.getService(this.hap.Service.Switch) ?? this.accessory.addService(this.hap.Service.Switch, 'Cook Refresh'),
       on: this.accessory.context.cookRefreshOn,
     };
-    if (this.cookRefresh) {
-      if (!this.cookRefresh.service) {
-        this.cookRefresh.service = new this.hap.Service.Switch('Cook Refresh', 'Cook Refresh');
-        if (this.cookRefresh.service) {
-          this.cookRefresh.service = this.accessory.addService(this.cookRefresh.service);
-          this.log.debug('Ambient Temperature Service');
-        } else {
-          this.log.error('Ambient Temperature Service -- Failed!');
-        }
-      }
-    }
 
     // Add serviceLabel Service's Characteristics
     this.cookRefresh.service
