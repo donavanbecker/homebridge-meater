@@ -167,11 +167,11 @@ export class Meater extends deviceBase {
     this.log.info(`Refreshing ${this.accessory.displayName} Status... Cooking: ${this.CookRefresh ? 'On' : 'Off'}`);
     if (this.CookRefresh) {
       try {
-        if (this.config.token) {
+        if (this.config.credentials?.token) {
           const { body, statusCode } = await request(`${meaterUrl}/${this.device.id}`, {
             method: 'GET',
             headers: {
-              'Authorization': 'Bearer ' + this.config.token,
+              'Authorization': 'Bearer ' + this.config.credentials?.token,
             },
           });
           this.log.debug(`Device statusCode: ${statusCode}`);
@@ -294,7 +294,7 @@ export class Meater extends deviceBase {
       this.accessory.context.ambientCurrentTemperature;
     }
     if (this.accessory.context.cookRefreshOn === undefined) {
-      this.accessory.context.cookRefreshOn = false;
+      this.accessory.context.cookRefreshOn = true;
     } else {
       this.accessory.context.cookRefreshOn;
     }
