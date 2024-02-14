@@ -14,56 +14,208 @@
         "title": "Name",
         "default": "Meater"
       },
-      "email": {
-        "type": "string",
-        "title": "email",
-        "placeholder": "apple@icloud.com",
-        "format": "email"
+      "credentials": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "email",
+            "placeholder": "apple@icloud.com",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "x-schema-form": {
+              "type": "password"
+            }
+          },
+          "notice": {
+            "title": "Notice",
+            "type": "string",
+            "default": "Keep your tokens a secret!"
+          }
+        },
+        "required": ["email", "password"]
       },
-      "password": {
-        "type": "string",
-        "title": "Password",
-        "x-schema-form": {
-          "type": "password"
-        }
-      },
-      "logging": {
-        "title": "Logging Setting",
-        "type": "string",
-        "required": true,
-        "default": "",
-        "oneOf": [
-          {
-            "title": "Default Logging",
-            "enum": [
-              ""
-            ]
+      "options": {
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "title": "Devices",
+              "type": "object",
+              "properties": {
+                "id": {
+                  "title": "Device ID",
+                  "type": "string",
+                  "placeholder": "81F3UT59513F"
+                },
+                "configDeviceName": {
+                  "title": "Device Name",
+                  "type": "string",
+                  "placeholder": "Hallway Thermostat",
+                  "condition": {
+                    "functionBody": "return (model.options && model.options.devices && model.options.devices[arrayIndices].deviceID);"
+                  }
+                },
+                "hide_device": {
+                  "title": "Hide Device",
+                  "type": "boolean",
+                  "condition": {
+                    "functionBody": "return (model.options && model.options.devices && model.options.devices[arrayIndices].deviceID);"
+                  }
+                },
+                "external": {
+                  "title": "External Accessory",
+                  "type": "boolean",
+                  "condition": {
+                    "functionBody": "return (model.options && model.options.devices && model.options.devices[arrayIndices].deviceID && !model.options.devices[arrayIndices].hide_device);"
+                  }
+                },
+                "firmware": {
+                  "title": "Firmware Override",
+                  "type": "string",
+                  "placeholder": "1.2.8",
+                  "condition": {
+                    "functionBody": "return (model.options && model.options.devices && !model.options.devices[arrayIndices].hide_device && model.options.devices[arrayIndices].deviceID);"
+                  }
+                },
+                "refreshRate": {
+                  "title": "Device Refresh Rate",
+                  "type": "number",
+                  "minimum": 30,
+                  "placeholder": 360,
+                  "description": "Indicates the number of seconds between polls of Meater API.",
+                  "condition": {
+                    "functionBody": "return (model.options && model.options.devices && !model.options.devices[arrayIndices].hide_device && (model.options.devices[arrayIndices].deviceClass === 'Thermostat' || model.options.devices[arrayIndices].deviceClass === 'LeakDetector') && model.options.devices[arrayIndices].deviceID);"
+                  }
+                },
+                "logging": {
+                  "title": "Device Logging Override Setting",
+                  "type": "string",
+                  "required": true,
+                  "default": "",
+                  "oneOf": [
+                    {
+                      "title": "Default Logging",
+                      "enum": [""]
+                    },
+                    {
+                      "title": "Standard Logging",
+                      "enum": ["standard"]
+                    },
+                    {
+                      "title": "No Logging",
+                      "enum": ["none"]
+                    },
+                    {
+                      "title": "Debug Logging",
+                      "enum": ["debug"]
+                    }
+                  ],
+                  "condition": {
+                    "functionBody": "return (model.options && model.options.devices && !model.options.devices[arrayIndices].hide_device && (model.options.devices[arrayIndices].deviceClass === 'Thermostat' || model.options.devices[arrayIndices].deviceClass === 'LeakDetector') && model.options.devices[arrayIndices].deviceID);"
+                  }
+                }
+              },
+              "required": ["id", "configDeviceName", "logging"]
+            }
           },
-          {
-            "title": "Standard Logging",
-            "enum": [
-              "standard"
-            ]
+          "refreshRate": {
+            "title": "Refresh Rate",
+            "type": "number",
+            "minimum": 30,
+            "placeholder": 120,
+            "description": "Indicates the number of seconds between polls of the Meater service."
           },
-          {
-            "title": "No Logging",
-            "enum": [
-              "none"
-            ]
-          },
-          {
-            "title": "Debug Logging",
-            "enum": [
-              "debug"
+          "logging": {
+            "title": "Logging Setting",
+            "type": "string",
+            "required": true,
+            "default": "",
+            "oneOf": [
+              {
+                "title": "Default Logging",
+                "enum": [""]
+              },
+              {
+                "title": "Standard Logging",
+                "enum": ["standard"]
+              },
+              {
+                "title": "No Logging",
+                "enum": ["none"]
+              },
+              {
+                "title": "Debug Logging",
+                "enum": ["debug"]
+              }
             ]
           }
-        ]
+        },
+        "required": ["logging"]
       }
     }
   },
   "layout": [
-    "email",
-    "password",
-    "logging"
+    {
+      "type": "fieldset",
+      "title": "Meater Account Info",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "type": "help",
+          "helpvalue": "<h5></h5><em class='primary-text'>This is for Manual Setup Only.</em>"
+        },
+        "credentials.email",
+        "credentials.password"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Meater Device Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "key": "options.devices",
+          "notitle": true,
+          "type": "tabarray",
+          "title": "{{ value.configDeviceName || value.id || 'New Meater Device' }}",
+          "expandable": true,
+          "expanded": false,
+          "orderable": false,
+          "items": [
+            "options.devices[].configDeviceName",
+            "options.devices[].id",
+            "options.devices[].hide_device",
+            "options.devices[].firmware",
+            "options.devices[].external",
+            "options.devices[].refreshRate",
+            "options.devices[].logging"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "type": "help",
+          "helpvalue": "<h5>Refresh Rate</h5><em class='primary-text'>Refresh Rate indicates the number of seconds between polls of the Meater service.</em>"
+        },
+        {
+          "key": "options.refreshRate",
+          "notitle": true
+        },
+        "options.logging"
+      ]
+    }
   ]
 }
