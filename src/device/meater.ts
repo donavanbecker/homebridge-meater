@@ -49,6 +49,8 @@ export class Meater extends deviceBase {
   ) {
     super(platform, accessory, device);
 
+    this.deviceContext();
+
     // serviceLabel Service
     this.debugLog('Configure serviceLabel Service');
     this.serviceLabel = {
@@ -64,7 +66,7 @@ export class Meater extends deviceBase {
     this.debugLog('Configure InternalTemperature Service');
     this.internal = {
       service: <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Internal Temperature'),
-      currentTemperature: 32,
+      currentTemperature: this.accessory.context.internal.currentTemperature,
     };
 
     if (this.internal) {
@@ -88,7 +90,7 @@ export class Meater extends deviceBase {
     this.debugLog('Configure AmbientTemperature Service');
     this.ambient = {
       service: <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Ambient Temperature'),
-      currentTemperature: 32,
+      currentTemperature: this.accessory.context.ambient.currentTemperature,
     };
     if (this.ambient) {
       if (!this.ambient.service) {
@@ -218,7 +220,7 @@ export class Meater extends deviceBase {
     } else {
       this.internal.service.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.internal.currentTemperature);
       this.log.debug(`${this.accessory.displayName} updateCharacteristic Internal Current Temperature: ${this.internal.currentTemperature}`);
-      this.accessory.context.internal.currentTemperature = this.internal.currentTemperature;
+      //this.accessory.context.internal.currentTemperature = this.internal.currentTemperature;
     }
 
     if (this.ambient.currentTemperature === undefined) {
@@ -287,5 +289,18 @@ export class Meater extends deviceBase {
     this.CookRefresh = value as boolean;
     await this.refreshStatus();
     await this.updateHomeKitCharacteristics();
+  }
+
+  async deviceContext() {
+    if (this.accessory.context.internal.currentTemperature === undefined) {
+      this.accessory.context.internal.currentTemperature = 32;
+    } else {
+      this.accessory.context.internal.currentTemperature;
+    }
+    if (this.accessory.context.ambient.currentTemperature === undefined) {
+      this.accessory.context.ambient.currentTemperature = 32;
+    } else {
+      this.accessory.context.ambient.currentTemperature;
+    }
   }
 }
