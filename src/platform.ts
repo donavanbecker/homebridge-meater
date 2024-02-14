@@ -262,7 +262,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
       if (await this.registerDevice(device)) {
         // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
         existingAccessory.context.device.id = device.id;
-        existingAccessory.context.displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
+        existingAccessory.context.displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
         existingAccessory.context.FirmwareRevision = await this.FirmwareRevision(device);
         this.infoLog(`Restoring existing accessory from cache: ${existingAccessory.displayName} DeviceID: ${device.id}`);
         this.api.updatePlatformAccessories([existingAccessory]);
@@ -276,18 +276,18 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
     } else if (await this.registerDevice(device)) {
       // the accessory does not yet exist, so we need to create it
       if (!device.external) {
-        const displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
+        const displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
         this.infoLog(`Adding new accessory, Meater: ${displayName}, id: ${device.id}`);
       }
 
       // create a new accessory
-      const accessory = new this.api.platformAccessory(`Meater Thermometer (${device.id.slice(0, 4)})`, uuid);
+      const accessory = new this.api.platformAccessory((device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`), uuid);
 
       // store a copy of the device object in the `accessory.context`
       // the `context` property can be used to store any data about the accessory you may need
       accessory.context.device = device;
       accessory.context.device.id = device.id;
-      accessory.context.displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
+      accessory.context.displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
       accessory.context.FirmwareRevision = await this.FirmwareRevision(device);
       // create the accessory handler for the newly create accessory
       // this is imported from `platformAccessory.ts`
@@ -318,7 +318,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
       registerDevice = true;
     } else {
       registerDevice = false;
-      const displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
+      const displayName = device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`;
       this.errorLog(
         `Meater: ${displayName}, id: ${device.id} will not display in HomeKit, hide_device: ${device.hide_device}`,
       );
@@ -388,7 +388,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
 
   async platformLogs() {
     this.debugMode = process.argv.includes('-D') || process.argv.includes('--debug');
-    this.platformLogging = this.config.options?.logging ?? 'standard';
+    this.platformLogging = this.config.options?.logging || 'standard';
     if (this.config.options?.logging === 'debug' || this.config.options?.logging === 'standard' || this.config.options?.logging === 'none') {
       this.platformLogging = this.config.options.logging;
       if (this.platformLogging?.includes('debug')) {

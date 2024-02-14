@@ -173,6 +173,9 @@ export class Meater extends deviceBase {
    * Asks the SwitchBot API for the latest device information
    */
   async refreshStatus(): Promise<void> {
+    if (this.CookRefresh === undefined) {
+      this.CookRefresh = false;
+    }
     this.log.info(`Refreshing ${this.accessory.displayName} Status... Cooking: ${this.CookRefresh}`);
     if (this.CookRefresh) {
       try {
