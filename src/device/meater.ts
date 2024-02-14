@@ -216,17 +216,17 @@ export class Meater extends deviceBase {
     if (this.internal.currentTemperature === undefined) {
       this.log.debug(`${this.accessory.displayName} Internal Current Temperature: ${this.internal.currentTemperature}`);
     } else {
-      this.accessory.context.internal.currentTemperature = this.internal.currentTemperature;
       this.internal.service.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.internal.currentTemperature);
       this.log.debug(`${this.accessory.displayName} updateCharacteristic Internal Current Temperature: ${this.internal.currentTemperature}`);
+      this.accessory.context.internal.currentTemperature = this.internal.currentTemperature;
     }
 
     if (this.ambient.currentTemperature === undefined) {
       this.log.debug(`${this.accessory.displayName} Ambient Current Temperature: ${this.ambient.currentTemperature}`);
     } else {
-      this.accessory.context.ambientCurrentTemperature = this.ambient.currentTemperature;
       this.ambient.service?.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.ambient.currentTemperature);
       this.log.debug(`${this.accessory.displayName} updateCharacteristic Ambient Current Temperature: ${this.ambient.currentTemperature}`);
+      this.accessory.context.ambient.currentTemperature = this.ambient.currentTemperature;
     }
 
     if (this.cookRefresh === undefined) {
