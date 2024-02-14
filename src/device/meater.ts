@@ -141,7 +141,6 @@ export class Meater extends deviceBase {
     this.SensorUpdateInProgress = false;
 
     // Retrieve initial values and update Homekit
-    this.refreshStatus();
     this.updateHomeKitCharacteristics();
 
     // Start an update interval
