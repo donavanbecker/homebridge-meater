@@ -105,7 +105,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
    * This method saves the openToken as the token in the config.json file
    * @param this.config.credentials.token
    */
-  async updateToken() {
+  async updateToken(login: { data: { token: any; }; }) {
     try {
       // check the new token was provided
       if (!this.config.credentials?.token) {
@@ -133,9 +133,9 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
       }
 
       // set the refresh token
-      pluginConfig.credentials.token = this.config.credentials?.token;
+      pluginConfig.credentials.token = login.data.token;
 
-      this.warnLog(`token: ${pluginConfig.credentials.token}`);
+      this.debugWarnLog(`token: ${pluginConfig.credentials.token}`);
 
       // save the config, ensuring we maintain pretty json
       writeFileSync(this.api.user.configPath(), JSON.stringify(currentConfig, null, 4));
@@ -154,7 +154,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
         const { body, statusCode } = await request(meaterUrl, {
           method: 'GET',
           headers: {
-            'Authorization': 'Bearer ' + this.config.token,
+            'Authorization': 'Bearer ' + this.config.credentials.token,
           },
         });
         this.debugLog(`Device statusCode: ${statusCode}`);
@@ -188,8 +188,7 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
         this.debugLog(`Login: ${JSON.stringify(login)}`);
         this.debugLog(`Login Token: ${JSON.stringify(login.data.token)}`);
         this.debugLog(`Login StatusCode: ${login.statusCode}`);
-        this.config.credentials!.token = login.data.token;
-        await this.updateToken();
+        await this.updateToken(login);
         this.debugLog(`statusCode: ${statusCode} & devicesAPI StatusCode: ${login.statusCode}`);
         if (statusCode === 200 && login.statusCode === 200) {
           const { body, statusCode } = await request(meaterUrl, {
