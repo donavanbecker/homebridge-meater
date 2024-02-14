@@ -173,10 +173,7 @@ export class Meater extends deviceBase {
    * Asks the SwitchBot API for the latest device information
    */
   async refreshStatus(): Promise<void> {
-    if (this.CookRefresh === undefined) {
-      this.CookRefresh = false;
-    }
-    this.log.info(`Refreshing ${this.accessory.displayName} Status... Cooking: ${this.CookRefresh}`);
+    this.log.info(`Refreshing ${this.accessory.displayName} Status... Cooking: ${this.CookRefresh ? 'On' : 'Off'}`);
     if (this.CookRefresh) {
       try {
         if (this.config.token) {
@@ -296,12 +293,12 @@ export class Meater extends deviceBase {
 
   async deviceContext() {
     if (this.accessory.context.internalCurrentTemperature === undefined) {
-      this.accessory.context.internalCurrentTemperature = 32;
+      this.accessory.context.internalCurrentTemperature = 0;
     } else {
       this.accessory.context.internalCurrentTemperature;
     }
     if (this.accessory.context.ambientCurrentTemperature === undefined) {
-      this.accessory.context.ambientCurrentTemperature = 32;
+      this.accessory.context.ambientCurrentTemperature = 0;
     } else {
       this.accessory.context.ambientCurrentTemperature;
     }
