@@ -233,6 +233,9 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
     } else {
       this.debugLog(`Meater Device Config Set: ${JSON.stringify(this.config.options?.devices)}`);
       const deviceConfigs = this.config.options?.devices;
+      if (deviceLists === undefined) {
+        deviceLists = deviceConfigs;
+      }
 
       const mergeByid = (a1: { id: string; }[], a2: any[]) => a1.map((itm: { id: string; }) => ({
         ...a2.find((item: { id: string; }) => item.id === itm.id && item),
