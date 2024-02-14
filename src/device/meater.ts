@@ -84,6 +84,7 @@ export class Meater extends deviceBase {
     // Add InternalTemperature Sensor Service's Characteristics
     this.internal.service
       .setCharacteristic(this.hap.Characteristic.Name, 'Internal Temperature')
+      .setCharacteristic(this.hap.Characteristic.ConfiguredName, 'Internal Temperature')
       .setCharacteristic(this.hap.Characteristic.CurrentTemperature, this.internal.currentTemperature);
 
     // AmbientTemperature Senosr Service
@@ -107,6 +108,7 @@ export class Meater extends deviceBase {
     // Add AmbientTemperature Senosr Service's Characteristics
     this.ambient.service
       .setCharacteristic(this.hap.Characteristic.Name, 'Ambient Temperature')
+      .setCharacteristic(this.hap.Characteristic.ConfiguredName, 'Ambient Temperature')
       .setCharacteristic(this.hap.Characteristic.CurrentTemperature, this.ambient.currentTemperature);
 
     // cookRefresh Service
@@ -119,6 +121,7 @@ export class Meater extends deviceBase {
     // Add serviceLabel Service's Characteristics
     this.cookRefresh.service
       .setCharacteristic(this.hap.Characteristic.Name, 'Cook Refresh')
+      .setCharacteristic(this.hap.Characteristic.ConfiguredName, 'Cook Refresh')
       .setCharacteristic(this.hap.Characteristic.On, this.cookRefresh.on);
 
     // Create handlers for required characteristics
