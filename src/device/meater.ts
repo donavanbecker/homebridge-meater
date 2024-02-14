@@ -49,73 +49,91 @@ export class Meater extends deviceBase {
   ) {
     super(platform, accessory, device);
 
-    // Service Label Service
-    this.serviceLabel.service = accessory.getService(this.hap.Service.ServiceLabel) ||
-      this.accessory.addService(this.hap.Service.ServiceLabel, device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`);
-    this.serviceLabel.service.setCharacteristic(this.hap.Characteristic.Name, device.configDeviceName
-      || `Meater Thermometer (${device.id.slice(0, 4)})`);
-    if (
-      !this.serviceLabel.service.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
-      !this.serviceLabel.service.testCharacteristic(this.hap.Characteristic.Name)
-    ) {
-      this.serviceLabel.service.addCharacteristic(
-        this.hap.Characteristic.ConfiguredName, device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`,
-      );
-    }
+    // serviceLabel Service
+    this.debugLog('Configure serviceLabel Service');
+    this.serviceLabel = {
+      service: this.accessory.getService(this.hap.Service.ServiceLabel)
+        ?? this.accessory.addService(this.hap.Service.ServiceLabel, device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`),
+    };
 
-    // Interal Temperature Sensor Service
-    this.internal.service = <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Internal Temperature');
-    if (!this.internal.service) {
-      this.internal.service = new this.hap.Service.TemperatureSensor('Internal Temperature', 'Internal Temperature');
-      if (this.internal.service) {
-        this.internal.service = this.accessory.addService(this.internal.service);
-        this.log.debug('Internal Temperature Service');
-      } else {
-        this.log.error('Internal Temperature Service -- Failed!');
+    // Add serviceLabel Service's Characteristics
+    this.serviceLabel.service
+      .setCharacteristic(this.hap.Characteristic.Name, device.configDeviceName || `Meater Thermometer (${device.id.slice(0, 4)})`);
+
+    // InternalTemperature Senosr Service
+    this.debugLog('Configure InternalTemperature Service');
+    this.internal = {
+      service: <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Internal Temperature'),
+      currentTemperature: 32,
+    };
+
+    if (this.internal) {
+      if (!this.internal.service) {
+        this.internal.service = new this.hap.Service.TemperatureSensor('Internal Temperature', 'Internal Temperature');
+        if (this.internal.service) {
+          this.internal.service = this.accessory.addService(this.internal.service);
+          this.log.debug('Internal Temperature Service');
+        } else {
+          this.log.error('Internal Temperature Service -- Failed!');
+        }
       }
     }
-    this.internal.service.setCharacteristic(this.hap.Characteristic.Name, 'Internal Temperature');
-    if (!this.internal.service.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
-      !this.internal.service.testCharacteristic(this.hap.Characteristic.Name)) {
-      this.internal.service.addCharacteristic(this.hap.Characteristic.ConfiguredName, 'Internal Temperature');
-    }
 
-    this.ambient.service = <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Ambient Temperature');
-    if (!this.ambient.service) {
-      this.ambient.service = new this.hap.Service.TemperatureSensor('Ambient Temperature', 'Ambient Temperature');
-      if (this.ambient.service) {
-        this.ambient.service = this.accessory.addService(this.ambient.service);
-        this.log.debug('Ambient Temperature Service');
-      } else {
-        this.log.error('Ambient Temperature Service -- Failed!');
+    // Add InternalTemperature Sensor Service's Characteristics
+    this.internal.service
+      .setCharacteristic(this.hap.Characteristic.Name, 'Internal Temperature')
+      .setCharacteristic(this.hap.Characteristic.CurrentTemperature, this.internal.currentTemperature);
+
+    // AmbientTemperature Senosr Service
+    this.debugLog('Configure AmbientTemperature Service');
+    this.ambient = {
+      service: <Service>this.accessory.getServiceById(this.hap.Service.TemperatureSensor, 'Ambient Temperature'),
+      currentTemperature: 32,
+    };
+    if (this.ambient) {
+      if (!this.ambient.service) {
+        this.ambient.service = new this.hap.Service.TemperatureSensor('Ambient Temperature', 'Ambient Temperature');
+        if (this.ambient.service) {
+          this.ambient.service = this.accessory.addService(this.ambient.service);
+          this.log.debug('Ambient Temperature Service');
+        } else {
+          this.log.error('Ambient Temperature Service -- Failed!');
+        }
       }
     }
-    this.ambient.service.setCharacteristic(this.hap.Characteristic.Name, 'Ambient Temperature');
-    if (!this.ambient.service.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
-      !this.ambient.service.testCharacteristic(this.hap.Characteristic.Name)) {
-      this.ambient.service.addCharacteristic(
-        this.hap.Characteristic.ConfiguredName, 'Ambient Temperature');
-    }
 
-    // Cook Refresh Switch Service Service
-    this.cookRefresh.service = <Service>this.accessory.getServiceById(this.hap.Service.Switch, 'Cook Refresh');
-    if (!this.cookRefresh.service) {
-      this.cookRefresh.service = new this.hap.Service.Switch('Cook Refresh', 'Cook Refresh');
-      if (this.cookRefresh.service) {
-        this.cookRefresh.service = this.accessory.addService(this.cookRefresh.service);
-        this.log.debug('Ambient Temperature Service');
-      } else {
-        this.log.error('Ambient Temperature Service -- Failed!');
+    // Add AmbientTemperature Senosr Service's Characteristics
+    this.ambient.service
+      .setCharacteristic(this.hap.Characteristic.Name, 'Ambient Temperature')
+      .setCharacteristic(this.hap.Characteristic.CurrentTemperature, this.ambient.currentTemperature);
+
+    // cookRefresh Service
+    this.debugLog('Configure cookRefresh Service');
+    this.cookRefresh = {
+      service: <Service>this.accessory.getServiceById(this.hap.Service.Switch, 'Cook Refresh'),
+      on: false,
+    };
+    if (this.cookRefresh) {
+      if (!this.cookRefresh.service) {
+        this.cookRefresh.service = new this.hap.Service.Switch('Cook Refresh', 'Cook Refresh');
+        if (this.cookRefresh.service) {
+          this.cookRefresh.service = this.accessory.addService(this.cookRefresh.service);
+          this.log.debug('Ambient Temperature Service');
+        } else {
+          this.log.error('Ambient Temperature Service -- Failed!');
+        }
       }
     }
-    this.cookRefresh.service.setCharacteristic(this.hap.Characteristic.Name, 'Cook Refresh');
-    if (!this.cookRefresh.service.testCharacteristic(this.hap.Characteristic.ConfiguredName) &&
-      !this.cookRefresh.service.testCharacteristic(this.hap.Characteristic.Name)) {
-      this.cookRefresh.service.addCharacteristic(
-        this.hap.Characteristic.ConfiguredName, 'Cook Refresh');
-    }
-    // create handlers for required characteristics
-    this.cookRefresh.service.getCharacteristic(this.hap.Characteristic.On).onSet(this.handleOnSet.bind(this));
+
+    // Add serviceLabel Service's Characteristics
+    this.cookRefresh.service
+      .setCharacteristic(this.hap.Characteristic.Name, 'Cook Refresh')
+      .setCharacteristic(this.hap.Characteristic.On, this.cookRefresh.on);
+
+    // Create handlers for required characteristics
+    this.cookRefresh.service
+      .getCharacteristic(this.hap.Characteristic.On)
+      .onSet(this.handleOnSet.bind(this));
 
     // this is subject we use to track when we need to POST changes to the NoIP API
     this.SensorUpdateInProgress = false;

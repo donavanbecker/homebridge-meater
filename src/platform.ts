@@ -273,7 +273,8 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
     } else if (await this.registerDevice(device)) {
       // the accessory does not yet exist, so we need to create it
       if (!device.external) {
-        this.infoLog(`Adding new accessory, DeviceID: ${device.id}`);
+        const displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
+        this.infoLog(`Adding new accessory, Meater: ${displayName}, id: ${device.id}`);
       }
 
       // create a new accessory
