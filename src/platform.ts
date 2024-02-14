@@ -314,8 +314,9 @@ export class MeaterPlatform implements DynamicPlatformPlugin {
       registerDevice = true;
     } else {
       registerDevice = false;
+      const displayName = device.configDeviceName ?? `Meater Thermometer (${device.id.slice(0, 4)})`;
       this.errorLog(
-        `DeviceID: ${device.id} will not display in HomeKit, hide_device: ${device.hide_device}`,
+        `Meater: ${displayName}, id: ${device.id} will not display in HomeKit, hide_device: ${device.hide_device}`,
       );
     }
     return registerDevice;
